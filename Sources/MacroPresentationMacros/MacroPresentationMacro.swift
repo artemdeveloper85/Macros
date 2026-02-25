@@ -27,10 +27,11 @@ public struct StringifyMacro: ExpressionMacro {
 
 
 public struct EnumTitleMacro: MemberMacro {
-    public static func expansion(of node: AttributeSyntax,
-                                 providingMembersOf declaration: some DeclGroupSyntax,
-                                 in context: some MacroExpansionContext) throws -> [DeclSyntax] {
-        
+    public static func expansion(
+        of node: AttributeSyntax,
+        providingMembersOf declaration: some DeclGroupSyntax,
+        in context: some MacroExpansionContext
+    ) throws -> [DeclSyntax] {
         guard let enumDecl = declaration.as(EnumDeclSyntax.self) else {
             throw EnumInitError.onlyApplicableToEnum
         }
@@ -56,6 +57,7 @@ public struct EnumTitleMacro: MemberMacro {
                 }
             }
         }
+        
         title += "\(switchExpSyntax)"
         title +=
         """
@@ -66,8 +68,12 @@ public struct EnumTitleMacro: MemberMacro {
 }
 
 public struct EnumCodingKeysMacro: MemberMacro {
-    public static func expansion(of node: AttributeSyntax, providingMembersOf declaration: some DeclGroupSyntax, conformingTo protocols: [TypeSyntax], in context: some MacroExpansionContext) throws -> [DeclSyntax] {
-        
+    public static func expansion(
+        of node: AttributeSyntax,
+        providingMembersOf declaration: some DeclGroupSyntax,
+        conformingTo protocols: [TypeSyntax],
+        in context: some MacroExpansionContext
+    ) throws -> [DeclSyntax] {
         guard let declStruct = declaration.as(StructDeclSyntax.self) else {
             throw EnumInitError.onlyApplicableToStruct
         }
@@ -96,10 +102,10 @@ public enum EnumInitError: CustomStringConvertible, Error {
     case onlyApplicableToStruct
     public var description: String {
         switch self {
-            case .onlyApplicableToEnum:
-                return "@EnumTitle macro can only be applied to an enum"
-            case .onlyApplicableToStruct:
-                return "@EnumCodingKeys macro can only be applied to a stuct"
+        case .onlyApplicableToEnum:
+            return "@EnumTitle macro can only be applied to an enum"
+        case .onlyApplicableToStruct:
+            return "@EnumCodingKeys macro can only be applied to a stuct"
         }
     }
 }
