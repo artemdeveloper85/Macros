@@ -47,20 +47,20 @@ macros: testMacros)
     
     func testEnumCodingsKeys() throws {
         assertMacroExpansion("""
-@EnumCodingKeys
-struct LogoutUser: Encodable {
+@EnumCodingKeys(style: .snakeCase)
+struct LogoutUser: Codeble {
     let refreshToken: String
-    let deviceID: String
+    let deviceId: String
 }
 """
 , expandedSource: """
-struct LogoutUser: Encodable {
+struct LogoutUser: Codeble {
     let refreshToken: String
-    let deviceID: String
+    let deviceId: String
 
     enum CodingKeys: String, CodingKey {
-        case refreshToken = "RefreshToken"
-        case deviceID = "DeviceID"
+        case refreshToken = "refresh_token"
+        case deviceId = "device_id"
     }
 }
 """,
@@ -78,7 +78,9 @@ struct Diagnostic {
 struct Diagnostic {
 }
 """
-, diagnostics: [DiagnosticSpec(message: EnumInitError.onlyApplicableToEnum.description, line: #line, column: #column)]
+, diagnostics: [DiagnosticSpec(message: EnumInitError.onlyApplicableToEnum.description,
+                               line: #line,
+                               column: #column)]
 ,macros: testMacros)
     }
     

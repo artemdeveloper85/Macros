@@ -1,12 +1,21 @@
 import MacroPresentation
 
-@EnumTitle
 enum State {
     case west, east
     case north, south
 }
 
-@EnumCodingKeys
+@EnumCodingKeys(style: .pascalCase)
 struct LogoutUser: Decodable {
-    let refreshToken, deviceID: String
+    let refreshToken: String
+    let deviceId: String
 }
+
+@EnumCodingKeys(style: .camelCase)
+class Student: Codable {
+    let firstName: String
+    let lastName: String
+}
+
+
+

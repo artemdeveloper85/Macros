@@ -2,6 +2,7 @@ import SwiftCompilerPlugin
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
+import Foundation
 
 /// Implementation of the `stringify` macro, which takes an expression
 /// of any type and produces a tuple containing the value of that expression
@@ -24,7 +25,6 @@ public struct StringifyMacro: ExpressionMacro {
         return "(\(argument), \(literal: argument.description))"
     }
 }
-
 
 public struct EnumTitleMacro: MemberMacro {
     public static func expansion(
@@ -74,38 +74,67 @@ public struct EnumCodingKeysMacro: MemberMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        guard let declStruct = declaration.as(StructDeclSyntax.self) else {
-            throw EnumInitError.onlyApplicableToStruct
+        guard declaration.is(StructDeclSyntax.self) || declaration.is(ClassDeclSyntax.self) else {
+            throw EnumInitError.enumCodingKeysError
         }
         
-        let members = declStruct.memberBlock.members
-        let variables = members.compactMap { $0.decl.as(VariableDeclSyntax.self) }
-        let bindings = variables.flatMap { $0.bindings }
+        guard let memberBlock = declaration.memberBlock.as(MemberBlockSyntax.self) else {
+            throw EnumInitError.enumCodingKeysError
+        }
         
-        var enumCodingKeys = """
+        let style = node.arguments?.as(LabeledExprListSyntax.self)?
+                .first(where: { $0.label?.text == "style" })?
+                .expression.as(MemberAccessExprSyntax.self)?
+                .declName.baseName.text ?? "pascalCase"
+        
+        let cases = memberBlock.members
+            .compactMap { $0.decl.as(VariableDeclSyntax.self) }
+            .filter { variables in
+                let isStatic = variables.modifiers.contains { $0.name.tokenKind == .keyword(.static) }
+                let isComputed = variables.bindings.allSatisfy { $0.accessorBlock != nil }
+                return !isStatic && !isComputed
+            }.flatMap { $0.bindings }
+            .compactMap { binding -> String? in
+                guard let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text else {
+                    return nil
+                }
+                let rawValue: String
+                
+                switch style {
+                case "snakeCase":
+                    rawValue = identifier.processSnakeCase
+                case "pascalCase":
+                    rawValue = identifier.prefix(1).uppercased() + identifier.dropFirst()
+                case "camelCase":
+                    rawValue = identifier
+                default:
+                    rawValue = identifier
+                }
+                        
+                return "case \(identifier) = \"\(rawValue)\""
+            }
+      
+        if cases.isEmpty { return [] }
+        
+        let enumCodingKeys: DeclSyntax = """
         enum CodingKeys: String, CodingKey {
-"""
-        for binding in bindings {
-            let description = TokenSyntax(stringLiteral: "\(binding.pattern.description)")
-            let capitalisedFirst = String(description.text.prefix(1)).uppercased() + String(description.text.dropFirst())
-            enumCodingKeys += "\(Keyword.case) \(description) = \"\(capitalisedFirst)\""
+            \(raw: cases.joined(separator: "\n    "))
         }
+        """
         
-        enumCodingKeys += "}"
-        
-       return [DeclSyntax(stringLiteral: "\(enumCodingKeys)")]
+       return [enumCodingKeys]
     }
 }
 
 public enum EnumInitError: CustomStringConvertible, Error {
     case onlyApplicableToEnum
-    case onlyApplicableToStruct
+    case enumCodingKeysError
     public var description: String {
         switch self {
         case .onlyApplicableToEnum:
             return "@EnumTitle macro can only be applied to an enum"
-        case .onlyApplicableToStruct:
-            return "@EnumCodingKeys macro can only be applied to a stuct"
+        case .enumCodingKeysError:
+            return "@EnumCodingKeys macro can only be applied to a struct or a class"
         }
     }
 }
@@ -117,4 +146,16 @@ struct MacroPresentationPlugin: CompilerPlugin {
         EnumTitleMacro.self,
         EnumCodingKeysMacro.self
     ]
+}
+
+extension String {
+    var processSnakeCase: String {
+        let snake = unicodeScalars.reduce("") { res, char in
+            if CharacterSet.uppercaseLetters.contains(char) && !res.isEmpty {
+                return res + "_" + String(char)
+            }
+            return res + String(char)
+        }
+        return snake.lowercased()
+    }
 }

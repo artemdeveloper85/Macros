@@ -14,5 +14,11 @@ public macro stringify<T>(_ value: T) -> (T, String) = #externalMacro(module: "M
 public macro EnumTitle() = #externalMacro(module: "MacroPresentationMacros", type: "EnumTitleMacro")
 
 
+public enum CodingKeyStyle {
+    case camelCase  // firstName -> firstName
+    case snakeCase  // firstName -> first_name
+    case pascalCase // firstName -> FirstName
+}
+
 @attached(member, names: named(CodingKeys))
-public macro EnumCodingKeys() = #externalMacro(module: "MacroPresentationMacros", type: "EnumCodingKeysMacro")
+public macro EnumCodingKeys(style: CodingKeyStyle = .camelCase) = #externalMacro(module: "MacroPresentationMacros", type: "EnumCodingKeysMacro")
