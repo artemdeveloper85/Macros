@@ -11,7 +11,7 @@ struct LogoutUser: Decodable {
     let deviceId: String
 }
 
-@EnumCodingKeys(style: .camelCase)
+@EnumCodingKeys()
 class Student: Codable {
     let firstName: String
     let lastName: String

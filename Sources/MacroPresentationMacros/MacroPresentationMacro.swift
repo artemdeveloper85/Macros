@@ -85,7 +85,7 @@ public struct EnumCodingKeysMacro: MemberMacro {
         let style = node.arguments?.as(LabeledExprListSyntax.self)?
                 .first(where: { $0.label?.text == "style" })?
                 .expression.as(MemberAccessExprSyntax.self)?
-                .declName.baseName.text ?? "pascalCase"
+                .declName.baseName.text ?? "snakeCase"
         
         let cases = memberBlock.members
             .compactMap { $0.decl.as(VariableDeclSyntax.self) }
